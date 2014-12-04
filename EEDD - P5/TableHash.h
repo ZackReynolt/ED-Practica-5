@@ -7,79 +7,82 @@
 
 #ifndef TABLEHASH_H
 #define	TABLEHASH_H
+
 #include <vector>
 #include <bitset>
 #include <math.h>
 
-unsigned long prime, _hash1, _hash2;        // Variables globales
-
 using namespace std;
+
+// Variables globales
+unsigned long _hash1, _hash2, prime;
 
 // Declaracion de funciones hechas al final de la clase
 long getPrime(long num);
-void getHash (unsigned long key, unsigned long _size);
 
-
-template<class T>
+template<class U>
 class Entry {
 public:
     long key;
-    T data;
+    U data;
     
-    Entry (long aKey, T aData) : key(aKey), data(aData) {};
+    Entry   (long aKey, U aData) : key(aKey), data(aData) {};
+    Entry   () : key(0), data() {};
 };
 
 template<class T, long L>
 class TableHash {
 private:
     unsigned long       size;
-    vector<Entry<T> >  table;
-    bitset<L>           chek;       // Estructura de datos para llevar las posiciones "ocupadas"/"vacías"/"libres"
+    vector<Entry<T> >   table;
+    bitset<L>           check;       // Estructura de datos para llevar las posiciones "ocupadas"/"vacías"/"libres"
     
     // Función de dispersión de la tabla
     unsigned long doubleDispersion (unsigned long key, int numColi) {
         unsigned long _hash = 0;
-        _hash = key % size;
+        _hash = ((key % size) + numColi * (prime + key % prime)) % size;
         return _hash;
     }
     
 public:
-    MyHastTable<T, L> () {
+    TableHash<T, L> () {
         size = L;
-    }
+        table.resize(L);
+        check.reset();
+        prime = getPrime(L*0.7);
+    };
     
     bool insert     (const long key, const T &data);
-    T* search       (const long key);
-    int size        ();
+    T*   search     (const long key);
+    int  tableSize  ();
 };
+
+
 
 /**
  * 
  * @return devuelve el tamaño ocupado en la tabla
  */
 template<class T, long L>
-int TableHash<class T,long L>::size() {
-    return chek.count();
+int TableHash<T, L>::tableSize() {
+    return check.count();
 }
 
 /**
  * 
  * @param key clave de búsqueda del objeto
- * @return devuelbe un puntero al objeto encontrado
+ * @return T* devuelbe un puntero al objeto encontrado
  * @description 
  */
 template<class T, long L>
-T* TableHash<class T,long L>::search(const long key) {
+T* TableHash<T, L>::search(const long key) {
     int i = 0;
-    getHash(key, size);
     unsigned long pos;
     do {
-        pos = doubleDispersion(key, i);
+        pos = doubleDispersion(key, i++);
         if (table[pos].key == key)
             return &table[pos].data;
-        else
-            i++;
-    } while (chek.test(pos));
+    } while (check.test(pos));
     return 0;
 }
 
@@ -90,32 +93,19 @@ T* TableHash<class T,long L>::search(const long key) {
  * @return devuelbe true si lo ha insertado y false en caso de que el número de colisiones sea superior a 6
  */
 template<class T, long L>
-bool TableHash<class T,long L>::insert(const long key, const T& data) {
+bool TableHash<T, L>::insert(const long key, const T& data) {
     int numColisions = 0;
-    getHash(key, size);
-    while (numColisions < 6) {
-        unsigned long pos = doubleDispersion(key, numColisions);
-        if (!chek.test(pos)) {
+    unsigned long pos;
+    do {
+        pos = doubleDispersion(key, numColisions++);
+        if (!check.test(pos)) {
             table[pos].key = key;
             table[pos].data = data;
-            chek.flip(pos);
+            check.flip(pos);
             return true;
-        } else
-            ++numColisions;
-    }
+        }
+    } while (numColisions < 50);
     return false;
-}
-
-/**
- * 
- * @param key clave del dato
- * @param _size tamaño de la tabal
- * @description método para generar los valores del cálculo de la tabla de dispersión
- */
-void getHash(unsigned long key, unsigned long _size) {
-    long p = getPrime(15000);
-    _hash1 = (key % p) % _size;
-    _hash2 = prime - (key % prime);
 }
 
 /**
@@ -135,7 +125,7 @@ long getPrime(long num) {
         if (n%m == 0) 
         {            
             n -= 1;
-            m = sqrt(n);            
+            m = sqrt(n);
         } 
         else
             --m;

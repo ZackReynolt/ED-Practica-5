@@ -8,28 +8,43 @@
 #ifndef ITEMCANCION_H
 #define	ITEMCANCION_H
 
+#include "Song.h"
+#include <vector>
+
 using namespace std;
 
 class ItemCancion {
 public:
-    ItemCancion             (string word): palabra(word){};
-    ItemCancion             (string word, int cod): palabra(word), code(cod) {};
+    ItemCancion             () : palabra(), canciones() {};
+    ItemCancion             (string word, Song *s) : palabra(word) {
+        canciones.push_back(s);
+    };
     ItemCancion             (const ItemCancion& orig);
-    virtual ~ItemCancion    () {};
-    bool operator<          (const ItemCancion& orig) const;
-    bool operator>          (const ItemCancion& orig) const;
-    bool operator==         (const ItemCancion& orig) const;
-    void    SetPalabra      (string palabra);
-    string  GetPalabra      () const;
-    void    SetCod          (int cod);
-    int     GetCod          () const;
+    virtual         ~ItemCancion    () {};
+    bool            operator<       (const ItemCancion& orig) const;
+    bool            operator>       (const ItemCancion& orig) const;
+    bool            operator==      (const ItemCancion& orig) const;
+    void            setPalabra      (string palabra);
+    string          getPalabra      () const;
+    void            addSong         (Song *s);
+    vector<Song*> * getSongs        ();
+    
 private:
-    string  palabra;
-    int code;
+    string              palabra;
+    vector<Song* >      canciones;
 };
 
 ItemCancion::ItemCancion(const ItemCancion& orig) {
-    palabra = orig.palabra;
+    palabra     = orig.palabra;
+    canciones   = orig.canciones;
+}
+
+void ItemCancion::addSong (Song *s) {
+    canciones.push_back(s);
+}
+
+vector<Song*> * ItemCancion::getSongs() {
+    return &canciones;
 }
 
 bool ItemCancion::operator< (const ItemCancion& orig) const {
@@ -45,20 +60,12 @@ bool ItemCancion::operator ==(const ItemCancion& orig) const {
     return palabra == orig.palabra;
 }
 
-void ItemCancion::SetPalabra(string palabra) {
+void ItemCancion::setPalabra(string palabra) {
     this->palabra = palabra;
 }
 
-string ItemCancion::GetPalabra() const {
+string ItemCancion::getPalabra() const {
     return palabra;
-}
-
-void ItemCancion::SetCod(int cod) {
-    this->code = cod;
-}
-
-int ItemCancion::GetCod() const {
-    return code;
 }
 
 #endif	/* ITEMCANCION_H */
