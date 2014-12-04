@@ -9,6 +9,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <cctype>
 
 #include "tinythread.h"
 #include "millisleep.h"
@@ -27,8 +28,25 @@ class RadioApp {
     vector<Request>  vPeticiones;
     vector<Song>     vCanciones;
     
-    TableHash<ItemCancion, 787>  tablaAutores;
-    TableHash<ItemCancion, 1583> tablaTitulos;
+    /* Tamaño de tablas según factor de carga:
+        70%
+        El primo más cercano a 410*1.7=697 es: 691
+        El primo más cercano a 821*1.7=1395.7 es: 1381
+        75%
+        El primo más cercano a 410*1.75=717.5 es: 709
+        El primo más cercano a 821*1.75=1436.75 es: 1433
+        80%
+        El primo más cercano a 410*1.80=738 es: 733
+        El primo más cercano a 821*1.80=1477.8 es: 1471
+        85%
+        El primo más cercano a 410*1.85=758.5 es: 757
+        El primo más cercano a 821*1.85=1518.85 es: 1511
+        90%
+        El primo más cercano a 410*1.9=779 es: 773
+        El primo más cercano a 821*1.9=1559.9 es: 1553
+     */
+    TableHash<ItemCancion, 691>  tablaAutores;
+    TableHash<ItemCancion, 1381> tablaTitulos;
    
     thread  threadReproducirCanciones;
     mutex   semaforo;
@@ -57,36 +75,60 @@ public:
             stringstream lineStreamTittle(lineTittle);
             
             while (getline(lineStreamArtist, artista, ' ')) {
+                for (int x = 0; x < artista.size(); x++)
+                    artista[x] = tolower(artista[x]);
+                
                 long key = djb2((char*) artista.c_str());
                 ItemCancion *p = tablaAutores.search(key);
                 if (!p) {
                     if (!tablaAutores.insert(key, ItemCancion(artista, &vCanciones[i])))
-                        cout << "Demasiadas colisiones para pArtista: " << artista << endl;
+                        cout << "Demasiadas colisiones para pArtista: " << artista << " en la canción " << i << endl;
                     pArtista++;
                 } else
                     p->addSong(&vCanciones[i]);
             };
             
             while (getline(lineStreamTittle, titulo, ' ')) {
+                for (int x = 0; x < titulo.size(); x++)
+                    titulo[x] = tolower(titulo[x]);
+                
                 long key = djb2((char*) titulo.c_str());
                 ItemCancion *p = tablaTitulos.search(key);
                 if (!p) {
                     if(!tablaTitulos.insert(key, ItemCancion(titulo, &vCanciones[i])))
-                        cout << "Demasiadas colisiones para pTitulo: " << titulo << endl;
+                        cout << "Demasiadas colisiones para pTitulo: " << titulo << " en la canción " << i << endl;
                     pTitulo++;
                 } else
                     p->addSong(&vCanciones[i]);
             };
         };
         
-//        ItemCancion *p = tablaTitulos.search(djb2((char*) "Who"));
-//        vector<Song*> *songs = p->getSongs();
-//        for (int i = 0; i < songs->size(); i++)
-//            cout << songs->at(i)->GetCode() << endl;
-        cout << "Número de palabras entre Autores: " << pArtista << endl;
-        cout << "Número de palabras entre Titulos: " << pTitulo << endl;
-        cout << "Data size de al tabla de autores: " << tablaAutores.tableSize() << endl;
-        cout << "Data size de al tabla de titulos: " << tablaTitulos.tableSize() << endl;
+//        cout << "Número de palabras entre Autores: " << pArtista << endl;
+//        cout << "Número de palabras entre Titulos: " << pTitulo << endl;
+//        cout << "Data size de al tabla de autores: " << tablaAutores.tableSize() << endl;
+//        cout << "Data size de al tabla de titulos: " << tablaTitulos.tableSize() << endl;
+        
+        //=================ESTO ES LO INTERESANTE===============//
+        // Forma de buscar palabras (SIEMPRE EN MINUSCULA)
+        
+        /*
+         * Forma de pasar un string a minusculas
+         string palabra = "PALABRA";
+         for (int x = 0; x < titulo.size(); x++)
+                    titulo[x] = tolower(titulo[x]);
+         */
+        
+        string palabra_buscada = "to";
+        //ItemCancion *p = tablaAutores.search(djb2((char*) palabra_buscada.c_str()));
+        ItemCancion *p = tablaTitulos.search(djb2((char*) palabra_buscada.c_str()));
+        if (p) {
+            vector<Song*> *songs = p->getSongs();
+            cout << endl;
+            cout << "Canciones con la palabra " << palabra_buscada << endl;
+            for (int i = 0; i < songs->size(); i++)
+                cout << songs->at(i)->GetCode() << endl;
+        } else
+            cout << "\n No hay canciones con la palabra " << palabra_buscada << endl;;
     };
 
     void reproducirCanciones() {
@@ -190,14 +232,36 @@ long djb2 (char *str) {
 }
 
 int main(int argc, char** argv) {
-    RadioApp app;
-    app.solicitarCanciones();
+//    RadioApp app;
+//    app.solicitarCanciones();
 
-    // # de palabras en Autores 413
-    // # de palabras en Titulos 829
-    cout << endl;
-    cout << "El primo más cercano a 413*1.9=" << 413*1.9 << " es: " << getPrime(413*1.9+10) << endl;
-    cout << "El primo más cercano a 829*1.9=" << 829*1.9 << " es: " << getPrime(829*1.9+10) << endl;
+    
+    /* Pruebas varias, NO BORRAR
+     * 
+     * 
+    // # de palabras en Autores 410
+    // # de palabras en Titulos 821
+    cout << "70%" << endl;
+    cout << "El primo más cercano a 410*1.7=" << 410*1.7 << " es: " << getPrime(410*1.7) << endl;
+    cout << "El primo más cercano a 821*1.7=" << 821*1.7 << " es: " << getPrime(821*1.7) << endl;
+    cout << "75%" << endl;
+    cout << "El primo más cercano a 410*1.75=" << 410*1.75 << " es: " << getPrime(410*1.75) << endl;
+    cout << "El primo más cercano a 821*1.75=" << 821*1.75 << " es: " << getPrime(821*1.75) << endl;
+    cout << "80%" << endl;
+    cout << "El primo más cercano a 410*1.80=" << 410*1.8 << " es: " << getPrime(410*1.8) << endl;
+    cout << "El primo más cercano a 821*1.80=" << 821*1.8 << " es: " << getPrime(821*1.8) << endl;
+    cout << "85%" << endl;
+    cout << "El primo más cercano a 410*1.85=" << 410*1.85 << " es: " << getPrime(410*1.85) << endl;
+    cout << "El primo más cercano a 821*1.85=" << 821*1.85 << " es: " << getPrime(821*1.85) << endl;
+    cout << "90%" << endl;
+    cout << "El primo más cercano a 410*1.9=" << 410*1.9 << " es: " << getPrime(410*1.9) << endl;
+    cout << "El primo más cercano a 821*1.9=" << 821*1.9 << " es: " << getPrime(821*1.9) << endl;
+    
+    for (int i = 0; i < 15; i++)
+        cout << ((6384548324 % 1531) + i*(1103 + 6384548324%1103)) % 1531 << endl;
+     * 
+     * 
+     */
     
     return 0;
 }

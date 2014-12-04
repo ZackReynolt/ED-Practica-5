@@ -40,7 +40,7 @@ private:
     // Función de dispersión de la tabla
     unsigned long doubleDispersion (unsigned long key, int numColi) {
         unsigned long _hash = 0;
-        _hash = ((key % size) + numColi * (prime + key % prime)) % size;
+        _hash = ((key % size) + numColi*(prime + key % prime)) % size;
         return _hash;
     }
     
@@ -104,7 +104,8 @@ bool TableHash<T, L>::insert(const long key, const T& data) {
             check.flip(pos);
             return true;
         }
-    } while (numColisions < 50);
+    } while (numColisions < 11);
+    
     return false;
 }
 
